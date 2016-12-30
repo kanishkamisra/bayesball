@@ -3,7 +3,6 @@ library(tidyr)
 library(Lahman)
 library(ggplot2)
 library(ggthemes)
-library(MASS)
 library(broom)
 
 #colors: 
@@ -22,10 +21,10 @@ batters <- Batting %>%
 
 batters <- Master %>%
   tbl_df() %>%
-  select(playerID, nameFirst, nameLast) %>%
+  dplyr::select(playerID, nameFirst, nameLast) %>%
   unite(name, nameFirst, nameLast, sep = " ") %>%
   inner_join(batters, by = "playerID") %>%
-  select(-playerID)
+  dplyr::select(-playerID)
 
 batters %>%
   filter(AB >= 500) %>%
@@ -37,6 +36,7 @@ batters %>%
 batters_filtered <- batters %>%
   filter(AB >= 500)
 
+library(MASS)
 #Fit a maximum likelihood model to the beta distribution
 mle <- fitdistr(batters_filtered$avg, "beta", start = list(shape1 = 1, shape2 = 12))
 tidy(mle)
@@ -65,6 +65,27 @@ ggplot(batters_estimates, aes(avg, estimate, color = AB)) +
   xlab("Batting average") +
   ylab("Empirical Bayes batting average")
 
-# These extraordinary outliers need extraordinary evidence
+# These extraordinary outliers need extraordinary evidence - David Robinson
+
+#Another way of getting the shapes to estimate the likelihood of alpha and beta:
+beta.mom <- function(x, lower = 0.01, upper = 100) {
+  x.bar <- mean(x)
+  n <- length(x)
+  v <- var(x) * (n - 1)/n
+  R <- 1/x.bar - 1
+  
+  f <- function(a) {
+    # note: undefined when a=0
+    R * a^2/((a/x.bar)^2 * (a/x.bar + 1)) - v
+  }
+  
+  u <- uniroot(f, c(lower, upper))
+  
+  return(c(shape1 = u$root, shape2 = u$root * R))
+}
+
+
+
+
 
 
