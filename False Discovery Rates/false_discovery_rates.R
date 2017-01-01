@@ -5,6 +5,8 @@ library(ggplot2)
 library(ggthemes)
 library(broom)
 
+options(digits = 3)
+
 #colors: 
 yellow <- "#f1c40f"
 blue <- "#30a2da"
@@ -68,7 +70,7 @@ hank_aaron
 pbeta(0.3, hank_aaron$alpha1, hank_aaron$beta1)
 
 # 17% chance that his true probability of hitting is actualyl less than 0.300
-# This metric is called the Posterior Exclusion Probability (PEP)
+# This metric is called the Posterior Error Probability (PEP)
 # PEP = 1 - PIP or the Posterior Inclusion Probability
 # Let's do this for all players and check their chances of being above 0.300
 
@@ -82,3 +84,38 @@ batters_estimates %>%
   ylab("Posterior Error Probability (PEP)") +
   geom_vline(color = "red", lty = 2, xintercept = .3) +
   scale_colour_gradient(trans = "log", breaks = 10 ^ (1:5))
+
+# it is a must to have an average greater than 0.3 to have less than 50% PEP..
+
+# ranking players based on variability
+famehall <- batters_estimates %>%
+  arrange(PEP) %>%
+  mutate(rank = row_number()) %>%
+  dplyr::select(rank, name, Hits, AB, estimate, PEP)
+
+famehall %>% head(10)
+famehall %>% slice(90:100)
+
+top_100 <- batters_estimates %>%
+  arrange(PEP) %>%
+  head(100)
+
+sum(top_100$PEP)
+
+mean(top_100$PEP)
+
+batters_estimates <- batters_estimates %>%
+  arrange(PEP) %>%
+  mutate(qvalue = cummean(PEP))
+
+famehall <- batters_estimates %>%
+  filter(qvalue < 0.05)
+
+batters_estimates %>%
+  filter(qvalue < .15) %>%
+  ggplot(aes(qvalue, rank(PEP))) +
+  geom_line(size = 2, color = green) +
+  xlab("q-value cutoff") +
+  ylab("Number of players included") + 
+  theme_fivethirtyeight() + 
+  ggtitle("Number of players required for qvalue cutoffs")
