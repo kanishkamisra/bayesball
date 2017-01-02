@@ -39,4 +39,32 @@ alpha = tidy(mle)$estimate[1]
 beta = tidy(mle)$estimate[2]
 
 batters_estimates <- batters_filtered %>%
-  mutate(estimate = (alpha + Hits)/(alpha + beta + AB), alpha1 = (Hits + alpha), beta1 = (AB - Hits + beta))
+  mutate(estimate = (alpha + Hits)/(alpha + beta + AB), alpha1 = (Hits + alpha), beta1 = (AB - Hits + beta)) %>%
+  arrange(desc(estimate))
+
+haaron <- batters_estimates %>% filter(name == "Hank Aaron")
+mpiazza <- batters_estimates %>% filter(name == "Mike Piazza")
+two_players <- bind_rows(haaron, mpiazza)
+
+
+# Comparing posterior distributions, or the plausible values of averages when randomly picked.
+two_players %>%
+  inflate(x = seq(0.28, 0.33, .00025)) %>%
+  mutate(density = dbeta(x, alpha1, beta1)) %>%
+  ggplot(aes(x, density, color = name)) +
+  geom_line(size = 1.2) +
+  theme_fivethirtyeight() + 
+  ggtitle("Posterior Distributions (Aaron vs Piazza")
+
+# there is quite a bit of overlapping between the two and in some cases, it is possible that aaron's
+# true average is higher than that of piazza's
+
+# Simulation of posterior beta distributions of both the players.
+piazza_simulation <- rbeta(1e6, mpiazza$alpha1, mpiazza$beta1)
+aaron_simulation <- rbeta(1e6, haaron$alpha1, haaron$beta1)
+
+sim <- mean(piazza_simulation > aaron_simulation)
+sim
+
+# There is 60.6% probability that piazza is better than hank aaron..
+
