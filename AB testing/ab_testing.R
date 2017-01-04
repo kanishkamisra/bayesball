@@ -37,6 +37,7 @@ tidy(mle)
 #get estimates for alpha and beta
 alpha = tidy(mle)$estimate[1]
 beta = tidy(mle)$estimate[2]
+prior_mu = alpha/(alpha + beta)
 
 batters_estimates <- batters_filtered %>%
   mutate(estimate = (alpha + Hits)/(alpha + beta + AB), alpha1 = (Hits + alpha), beta1 = (AB - Hits + beta)) %>%
