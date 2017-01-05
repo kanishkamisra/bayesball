@@ -97,4 +97,61 @@ batters_estimates %>%
 # To include AB, we can define mu as 
 # I give up
 
+library(gamlss)
 
+fit <- gamlss(cbind(Hits, AB - Hits) ~ log(AB),
+              data = batters_estimates,
+              family = BB(mu.link = "identity"))
+
+tidy.fit <- tidy(fit)
+
+mu_0 <- tidy.fit$estimate[1]
+mu_AB <- tidy.fit$estimate[2]
+sigma <- exp(tidy.fit$estimate[3])
+
+crossing(x = seq(0.08, .35, .001), AB = c(1, 10, 100, 1000, 10000)) %>%
+  mutate(density = dbeta(x, (mu_0 + mu_AB * log(AB)) / sigma,
+                         (1 - (mu_0 + mu_AB * log(AB))) / sigma)) %>%
+  mutate(AB = factor(AB)) %>%
+  ggplot(aes(x, density, color = AB, group = AB)) +
+  geom_line(size = 1.5) +
+  xlab("Batting average") +
+  ylab("Prior density") + 
+  theme_fivethirtyeight() + 
+  theme(plot.title=element_text(family="Roboto")) +
+  theme(axis.title = element_text(family = "Roboto", face = "bold", color="#666666", size = 12)) +
+  theme(axis.text = element_text(family = "Roboto", face = "bold", color = "#535353", size = 11)) +
+  theme(strip.text.x = element_text(family = "Roboto", face = "bold", size = 11)) +
+  geom_hline(yintercept=0,size=1.2,colour="#535353") +
+  scale_color_manual(values = c(blue, red, yellow, green , purple)) + 
+  ggtitle("Estimates based on at-bats")
+  
+
+mu <- fitted(fit, parameter = "mu")
+sigma <- fitted(fit, parameter = "sigma")
+
+estimates_wAB <- batters_estimates %>%
+  dplyr::select(name, Hits, AB, original = estimate) %>%
+  mutate(mu = mu,
+         alpha0 = mu / sigma,
+         beta0 = (1 - mu) / sigma,
+         alpha1 = alpha0 + Hits,
+         beta1 = beta0 + AB - Hits,
+         new = alpha1 / (alpha1 + beta1))
+
+ggplot(estimates_wAB, aes(original, new, color = AB)) +
+  geom_point() +
+  geom_abline(color = red, size = 1) +
+  xlab("Original EB Estimate") +
+  ylab("EB Estimate w/ AB term") +
+  scale_color_continuous(trans = "log", breaks = 10 ^ (0:4)) +
+  # theme_minimal()+
+  theme_fivethirtyeight(base_family = "Roboto Condensed") +
+  theme(plot.title=element_text(family="Roboto Condensed", face = "bold")) +
+  theme(axis.title = element_text(family = "Roboto", face = "bold", color="#666666", size = 12)) +
+  theme(axis.text = element_text(family = "Roboto", face = "bold", color = "#535353", size = 11)) +
+  theme(strip.text.x = element_text(family = "Roboto", face = "bold", size = 11)) +
+  # geom_hline(yintercept=0,size=1.2,colour="#535353") +
+  ggtitle("Shrinkage of Estimates with AB") + 
+  labs(subtitle = "Kanishka Misra", caption = "A Plot by Kanishka Misra")
+  

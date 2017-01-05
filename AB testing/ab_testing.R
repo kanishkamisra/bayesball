@@ -55,7 +55,12 @@ two_players %>%
   ggplot(aes(x, density, color = name)) +
   geom_line(size = 1.2) +
   theme_fivethirtyeight() + 
-  ggtitle("Posterior Distributions (Aaron vs Piazza")
+  ggtitle("Posterior Distributions (Aaron vs Piazza)")+
+  theme(plot.title=element_text(family="Roboto")) +
+  theme(axis.title = element_text(family = "Roboto", face = "bold", color="#666666", size = 12)) +
+  theme(axis.text = element_text(family = "Roboto", face = "bold", color = "#535353", size = 11)) +
+  theme(strip.text.x = element_text(family = "Roboto", face = "bold", size = 11)) +
+  geom_hline(yintercept=0,size=1.2,colour="#535353")
 
 # there is quite a bit of overlapping between the two and in some cases, it is possible that aaron's
 # true average is higher than that of piazza's
