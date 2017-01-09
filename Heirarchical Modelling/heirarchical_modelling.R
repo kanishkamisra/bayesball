@@ -17,32 +17,35 @@ red <- "#fc4f30"
 green <- "#77ab43"
 purple <- "#9b59b6"
 
+pitchers <- Pitching %>%
+  group_by(playerID) %>%
+  summarize(gamesPitched = sum(G)) %>%
+  filter(gamesPitched > 3)
+
 batters <- Batting %>%
   filter(AB > 0) %>%
-  anti_join(Pitching, by = "playerID") %>%
+  anti_join(pitchers, by = "playerID") %>%
   group_by(playerID) %>%
   summarize(Hits = sum(H), AB = sum(AB)) %>%
   mutate(avg = Hits/AB)
 
 batters <- Master %>%
   tbl_df() %>%
-  dplyr::select(playerID, nameFirst, nameLast) %>%
+  dplyr::select(playerID, nameFirst, nameLast, bats) %>%
   unite(name, nameFirst, nameLast, sep = " ") %>%
   inner_join(batters, by = "playerID")
 
-batters_filtered <- batters %>%
-  filter(AB >= 500)
+library(gamlss)
 
-#Fit a maximum likelihood model to the beta distribution
-mle <- MASS::fitdistr(batters_filtered$avg, "beta", start = list(shape1 = 1, shape2 = 12))
-tidy(mle)
+fit <- gamlss(cbind(Hits, AB - Hits) ~ log(AB),
+              data = dplyr::select(batters, -bats),
+              family = BB(mu.link = "identity"))
 
-#get estimates for alpha and beta
-alpha = tidy(mle)$estimate[1]
-beta = tidy(mle)$estimate[2]
-prior_mu = alpha/(alpha + beta)
-
-batters_estimates <- batters_filtered %>%
-  mutate(estimate = (alpha + Hits)/(alpha + beta + AB), alpha1 = (Hits + alpha),
-         beta1 = (AB - Hits + beta)) %>%
-  arrange(desc(estimate))
+batters_estimate <- batters%>%
+  mutate(mu = fitted(fit, "mu"),
+         sigma = fitted(fit, "sigma"),
+         alpha0 = mu / sigma,
+         beta0 = (1 - mu) / sigma,
+         alpha1 = alpha0 + Hits,
+         beta1 = beta0 + AB - Hits,
+         estimate = alpha1 / (alpha1 + beta1))
