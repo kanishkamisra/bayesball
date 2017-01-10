@@ -83,9 +83,8 @@ batters_estimates %>%
   theme(axis.title = element_text(family = "Roboto", face = "bold", color="#666666", size = 12)) +
   theme(axis.text = element_text(family = "Roboto", face = "bold", color = "#535353", size = 11)) +
   theme(strip.text.x = element_text(family = "Roboto", face = "bold", size = 11)) + 
-  ggtitle("At-bats vs log averages and estimates") +
-  # geom_hline(yintercept=0,size=1.2,colour="#535353") +
-  labs(subtitle = "Kanishka Misra")
+  ggtitle("At-bats vs log averages and estimates")
+  # geom_hline(yintercept=0,size=1.2,colour="#535353")
 
 # Low AB value players are getting grossly overestimated by the shrinkage model
 # There is a need to make a model that considers AB
@@ -141,7 +140,7 @@ estimates_wAB <- batters_estimates %>%
 
 ggplot(estimates_wAB, aes(original, new, color = AB)) +
   geom_point() +
-  geom_abline(color = red, size = 1) +
+  geom_abline(color = red, size = 1.4) +
   xlab("Original EB Estimate") +
   ylab("EB Estimate w/ AB term") +
   scale_color_continuous(trans = "log", breaks = 10 ^ (0:4)) +
